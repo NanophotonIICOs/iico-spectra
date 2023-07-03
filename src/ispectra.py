@@ -16,6 +16,7 @@ from datetime import date
 # matplotlib params:
 import matplotlib as plt
 plt.rcParams["font.family"] = "sans-serif"
+import matplotlib.colors as mcolors
 
 
 def npath(p):
@@ -66,6 +67,9 @@ class SpectrometerApp(QMainWindow):
         label0 = QLabel("Experiment parameters")
         label0.setAlignment(Qt.AlignCenter)
         sidebar_layout.addWidget(label0)
+        # Device name label
+        self.device_name_label = QLabel("Device: N/A")
+        sidebar_layout.addWidget(self.device_name_label)
 
         # File name input
         file_name_label = QLabel("File Name:")
@@ -171,11 +175,13 @@ class SpectrometerApp(QMainWindow):
                 self.wavelengths = wavelengths
 
                 self.ax.cla()
-                self.ax.plot(wavelengths, intensities, color='b', label=self.measurement_counter)
+                self.ax.plot(wavelengths, intensities, color='tab:blue', label=self.measurement_counter)
                 self.ax.set_xlabel('Wavelength (nm)')
                 self.ax.set_ylabel('Intensity')
                 self.ax.set_title('Spectrum')
-                self.ax.legend(frameon=False)
+                #self.ax.set_ylim([0,16383])
+                self.ax.legend(frameon=False,loc='upper right')
+                
                 self.canvas.draw()
                 self.measurement_counter += 1
                 self.measurement_counter_label.setText(f"Measurements: {self.measurement_counter}")
@@ -199,7 +205,7 @@ class SpectrometerApp(QMainWindow):
     def save_data(self):
         if self.data and self.save_file_radio.isChecked():
             today = date.today()
-            datet = today.strftime("%b-%d-%Y")
+            datet = today.strftime("%Y-%m-%d")
             current_time = datetime.datetime.now()
             file_path = f"{self.file_path}/{self.file_name}-{datet}-{current_time.hour}:{current_time.minute}:{current_time.second}.csv"
             try:
