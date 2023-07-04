@@ -4,7 +4,7 @@ import datetime
 import numpy as np
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QHBoxLayout, QFrame, QFileDialog, QMessageBox, QRadioButton
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPixmap,QIcon
+from PyQt5.QtGui import QPixmap, QIcon
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from threading import Thread
@@ -16,15 +16,17 @@ from datetime import date
 # matplotlib params:
 import matplotlib as plt
 plt.rcParams["font.family"] = "sans-serif"
+import matplotlib.colors as mcolors
 
 
 def npath(p):
-    s        = "\\" if sys.platform == "Windows" else "/"
-    ruta     = p.split(s)
-    part1    = "C:\\".join(ruta[:3]) if sys.platform == "Windows" else "/".join(ruta[:3])
-    part2    = "\\".join(ruta[-2:]) if sys.platform == "Windows" else "/".join(ruta[-2:])
+    s = "\\" if sys.platform == "Windows" else "/"
+    ruta = p.split(s)
+    part1 = "C:\\".join(ruta[:3]) if sys.platform == "Windows" else "/".join(ruta[:3])
+    part2 = "\\".join(ruta[-2:]) if sys.platform == "Windows" else "/".join(ruta[-2:])
     new_path = part1 + f"{s}...{s}" + part2
     return new_path
+
 
 class SpectrometerApp(QMainWindow):
     def __init__(self):
@@ -51,26 +53,24 @@ class SpectrometerApp(QMainWindow):
 
         # Sidebar
         sidebar = QFrame(self)
-        #sidebar.setFrameShape(QFrame.StyledPanel)
+        # sidebar.setFrameShape(QFrame.StyledPanel)
         sidebar.setFrameShape(QFrame.Panel)
         sidebar.setMinimumWidth(250)
         sidebar_layout = QVBoxLayout(sidebar)
-        #logo image
+        # logo image
         logo_label = QLabel()
-        logo_image = QPixmap("utils/icons/logo.png")  
+        logo_image = QPixmap("utils/icons/logo.png")
         logo_label.setPixmap(logo_image)
         logo_label.setAlignment(Qt.AlignCenter)
-
         sidebar_layout.addWidget(logo_label)
 
-        
-        
         label0 = QLabel("Experiment parameters")
         label0.setAlignment(Qt.AlignCenter)
         sidebar_layout.addWidget(label0)
-        
-        
-        
+        # Device name label
+        self.device_name_label = QLabel("Device: N/A")
+        sidebar_layout.addWidget(self.device_name_label)
+
         # File name input
         file_name_label = QLabel("File Name:")
         sidebar_layout.addWidget(file_name_label)
@@ -91,8 +91,7 @@ class SpectrometerApp(QMainWindow):
         self.save_file_radio = QRadioButton("Save File")
         self.save_file_radio.setChecked(True)
         sidebar_layout.addWidget(self.save_file_radio)
-        
-        
+
         # Integration time input
         integration_label = QLabel("Integration time:\n [3.8 <= i-time <= 10000]")
         sidebar_layout.addWidget(integration_label)
@@ -135,7 +134,7 @@ class SpectrometerApp(QMainWindow):
         folder = QFileDialog.getExistingDirectory(self, "Select Destination Folder")
         if folder:
             self.file_path = folder
-            fpath= f"{self.file_path}/{self.file_name_input.text()}.csv"
+            fpath = f"{self.file_path}/{self.file_name_input.text()}.csv"
             self.file_path_label.setText(f"File Path: {npath(fpath)}")
 
     def start_continuous_reading(self):
@@ -155,13 +154,14 @@ class SpectrometerApp(QMainWindow):
         if self.spectrometer is None:
             try:
                 self.spectrometer = sb.Spectrometer.from_first_available()
+                self.device_name_label.setText(f"Device: {self.spectrometer.model}")
             except sb.SeaBreezeError:
                 self.show_alert("No spectrometer device found. Please connect a device.")
                 return
 
         self.spectrometer.integration_time_micros(int(self.integration_time * 1000))
         self.is_measuring = True
-        self.data = []  
+        self.data = []
         self.thread = Thread(target=self.continuous_reading)
         self.thread.start()
 
@@ -175,21 +175,22 @@ class SpectrometerApp(QMainWindow):
                 self.wavelengths = wavelengths
 
                 self.ax.cla()
-                self.ax.plot(wavelengths, intensities, color='b',label=self.measurement_counter)
+                self.ax.plot(wavelengths, intensities, color='tab:blue', label=self.measurement_counter)
                 self.ax.set_xlabel('Wavelength (nm)')
                 self.ax.set_ylabel('Intensity')
                 self.ax.set_title('Spectrum')
-                self.ax.legend(frameon=False)
+                #self.ax.set_ylim([0,16383])
+                self.ax.legend(frameon=False,loc='upper right')
+                
                 self.canvas.draw()
                 self.measurement_counter += 1
                 self.measurement_counter_label.setText(f"Measurements: {self.measurement_counter}")
                 time.sleep(0.1)
-                
+
             except sb.SeaBreezeError:
                 self.show_alert("Device disconnected.")
                 self.stop_continuous_reading()
                 break
-        
 
     def stop_continuous_reading(self):
         if not self.is_measuring:
@@ -204,7 +205,7 @@ class SpectrometerApp(QMainWindow):
     def save_data(self):
         if self.data and self.save_file_radio.isChecked():
             today = date.today()
-            datet = today.strftime("%b-%d-%Y")
+            datet = today.strftime("%Y-%m-%d")
             current_time = datetime.datetime.now()
             file_path = f"{self.file_path}/{self.file_name}-{datet}-{current_time.hour}:{current_time.minute}:{current_time.second}.csv"
             try:
