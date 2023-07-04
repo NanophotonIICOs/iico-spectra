@@ -2,8 +2,8 @@ import sys
 import os
 import datetime
 import numpy as np
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QHBoxLayout, QFrame, QFileDialog, QMessageBox, QRadioButton, QSlider,QSizePolicy)
-from PyQt5.QtCore import Qt,QTimer
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QHBoxLayout, QFrame, QFileDialog, QMessageBox, QRadioButton, QSlider
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap, QIcon
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -20,10 +20,10 @@ import matplotlib.colors as mcolors
 
 
 def npath(p):
-    s = "\\" if sys.platform == "Windows" else "/"
+    s = "\\" if sys.platform == "win32" else "/"
     ruta = p.split(s)
-    part1 = "C:\\".join(ruta[:3]) if sys.platform == "Windows" else "/".join(ruta[:3])
-    part2 = "\\".join(ruta[-2:]) if sys.platform == "Windows" else "/".join(ruta[-2:])
+    part1 = "C:\\".join(ruta[:3]) if sys.platform == "win32" else "/".join(ruta[:3])
+    part2 = "\\".join(ruta[-2:]) if sys.platform == "win32" else "/".join(ruta[-2:])
     new_path = part1 + f"{s}...{s}" + part2
     return new_path
 
@@ -42,19 +42,17 @@ class SpectrometerApp(QMainWindow):
         self.wavelengths = []
         self.integration_time = 3.8
         self.save_file = True
-        self.setWindowTitle("ISpectra")
+        self.setWindowTitle("IICO-Spectra")
         icon = QIcon("utils/icons/logo.ico")
         self.setWindowIcon(icon)
-        self.resize(900, 600)
+        self.resize(1000, 600)
 
         central_widget = QWidget(self)
         self.setCentralWidget(central_widget)
         layout = QHBoxLayout(central_widget)
-        
 
         # Sidebar
         sidebar = QFrame(self)
-        # sidebar.setFrameShape(QFrame.StyledPanel)
         sidebar.setFrameShape(QFrame.Panel)
         sidebar.setMinimumWidth(323)
         sidebar_layout = QVBoxLayout(sidebar)
@@ -73,9 +71,6 @@ class SpectrometerApp(QMainWindow):
         sidebar_layout.addWidget(self.device_name_label)
 
         # File name input
-        file_name_label = QLabel("File Name:")
-        sidebar_layout.addWidget(file_name_label)
-
         self.file_name_input = QLineEdit()
         self.file_name_input.setText("data")
         sidebar_layout.addWidget(self.file_name_input)
@@ -94,9 +89,6 @@ class SpectrometerApp(QMainWindow):
         sidebar_layout.addWidget(self.save_file_radio)
 
         # Integration time input
-        integration_label = QLabel("Integration time:\n [3.8 <= i-time <= 10000]")
-        sidebar_layout.addWidget(integration_label)
-
         self.integration_time_input = QLineEdit()
         self.integration_time_input.setText("3.8")
         sidebar_layout.addWidget(self.integration_time_input)
@@ -112,10 +104,15 @@ class SpectrometerApp(QMainWindow):
         stop_button.clicked.connect(self.stop_continuous_reading)
         sidebar_layout.addWidget(stop_button)
 
-        # sidebar_layout.addStretch()
-        sidebar.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Expanding)
+        sidebar_layout.addStretch()
 
-        
+        exit_button = QPushButton("Exit")
+        exit_button.clicked.connect(self.exit_application)
+        sidebar_layout.addWidget(exit_button)
+
+        self.measurement_counter_label = QLabel("Measurements: 0")
+        sidebar_layout.addWidget(self.measurement_counter_label)
+
         # Slider widgets
         sidebar_layout.addWidget(QLabel("Axis Limits"))
         self.xlim_min_slider = self.create_slider_with_label(sidebar_layout, "X Min:", 200, 500, 0)
@@ -125,16 +122,8 @@ class SpectrometerApp(QMainWindow):
 
         layout.addWidget(sidebar)
 
-        exit_button = QPushButton("Exit")
-        exit_button.clicked.connect(self.exit_application)
-        sidebar_layout.addWidget(exit_button)
-
-        self.measurement_counter_label = QLabel("Measurements: 0")
-        sidebar_layout.addWidget(self.measurement_counter_label)
-        layout.addWidget(sidebar)
-
         # Main plot area
-        self.fig = Figure(figsize=(8, 6), dpi=100)
+        self.fig = Figure(figsize=(10, 8), dpi=100)
         self.ax = self.fig.add_subplot(111)
         self.canvas = FigureCanvas(self.fig)
         layout.addWidget(self.canvas)
@@ -147,7 +136,7 @@ class SpectrometerApp(QMainWindow):
             self.file_path = folder
             fpath = f"{self.file_path}/{self.file_name_input.text()}.csv"
             self.file_path_label.setText(f"File Path: {npath(fpath)}")
-    
+
     def create_slider_with_label(self, layout, label_text, min_val, max_val, start_val):
         slider_layout = QVBoxLayout()
         label = QLabel(label_text)
@@ -160,7 +149,7 @@ class SpectrometerApp(QMainWindow):
         slider_layout.addWidget(slider)
         layout.addLayout(slider_layout)
         return slider
-    
+
     def update_axis_limits(self):
         xlim_min = self.xlim_min_slider.value()
         xlim_max = self.xlim_max_slider.value()
@@ -194,78 +183,71 @@ class SpectrometerApp(QMainWindow):
                 self.spectrometer = sb.Spectrometer.from_first_available()
                 self.device_name_label.setText(f"Device: {self.spectrometer.model}")
             except sb.SeaBreezeError:
-                self.show_alert("No spectrometer device found. Please connect a device.")
+                self.show_alert("No spectrometer found.")
                 return
 
-        self.spectrometer.integration_time_micros(int(self.integration_time * 1000))
         self.is_measuring = True
+        self.measurement_counter = 0
         self.data = []
+
         self.thread = Thread(target=self.continuous_reading)
         self.thread.start()
-        self.timer = QTimer()
-        self.timer.timeout.connect(self.continuous_reading)
-        self.timer.start(100)
 
     def continuous_reading(self):
-        intensities = []
         while self.is_measuring:
             try:
                 wavelengths = self.spectrometer.wavelengths()
-                intensities = self.spectrometer.intensities()
-                self.data.append(intensities.copy())  # Agregar una copia de las intensidades a la lista de datos
-                self.wavelengths = wavelengths
+                intensities = self.spectrometer.intensities(integration_time=self.integration_time)
 
-                self.ax.cla()
-                self.ax.plot(wavelengths, intensities, color='tab:blue', label=self.measurement_counter)
+                self.data.append((wavelengths, intensities))
+                self.measurement_counter += 1
+
+                self.ax.clear()
+                for i in range(len(self.data)):
+                    self.ax.plot(self.data[i][0], self.data[i][1])
                 self.ax.set_xlim(self.xlim_min_slider.value(), self.xlim_max_slider.value())
                 self.ax.set_ylim(self.ylim_min_slider.value(), self.ylim_max_slider.value())
-                self.ax.set_xlabel('Wavelength (nm)')
-                self.ax.set_ylabel('Intensity')
-                self.ax.set_title('Spectrum')
-                #self.ax.set_ylim([0,16383])
-                self.ax.legend(frameon=False,loc='upper right')
-                
+                self.ax.set_xlabel("Wavelength (nm)")
+                self.ax.set_ylabel("Intensity (counts)")
+                self.ax.set_title("Spectrometer Reading")
                 self.canvas.draw()
-                self.measurement_counter += 1
-                self.measurement_counter_label.setText(f"Measurements: {self.measurement_counter}")
-                # time.sleep(0.1)
 
-            except sb.SeaBreezeError:
-                self.show_alert("Device disconnected.")
+                self.measurement_counter_label.setText(f"Measurements: {self.measurement_counter}")
+                time.sleep(0.1)
+            except Exception as e:
+                print(f"Error: {e}")
+                self.show_alert("An error occurred while reading the spectrometer.")
                 self.stop_continuous_reading()
                 break
 
     def stop_continuous_reading(self):
-        if not self.is_measuring:
-            return
-
         self.is_measuring = False
-        self.thread.join()
-        self.save_data()
-        self.measurement_counter = 0
-        self.measurement_counter_label.setText(f"Measurements: {self.measurement_counter}")
-        self.timer.stop()
+        if self.thread is not None:
+            self.thread.join()
+            self.thread = None
 
-    def save_data(self):
-        if self.data and self.save_file_radio.isChecked():
-            today = date.today()
-            datet = today.strftime("%Y-%m-%d")
-            current_time = datetime.datetime.now()
-            file_path = f"{self.file_path}/{self.file_name}-{datet}-{current_time.hour}:{current_time.minute}:{current_time.second}.csv"
-            try:
-                with open(file_path, "w", newline="") as csvfile:
-                    writer = csv.writer(csvfile)
-                    writer.writerow(["Wavelength (nm)"] + list(range(len(self.data))))
-                    writer.writerows(zip(self.wavelengths, *self.data))
-                self.show_alert("Data saved successfully.")
-            except IOError:
-                self.show_alert("Error occurred while saving the data.")
-        else:
-            self.show_alert("No data to save.")
+        if self.spectrometer is not None:
+            self.spectrometer.close()
+            self.spectrometer = None
 
+        if self.save_file:
+            if not self.file_path:
+                self.show_alert("Select destination folder first.")
+                return
+
+            file_name = f"{self.file_path}/{self.file_name}.csv"
+            with open(file_name, mode='w', newline='') as file:
+                writer = csv.writer(file)
+                writer.writerow(['wavelength (nm)', 'intensity (counts)'])
+                for i in range(len(self.data)):
+                    writer.writerow(self.data[i][0])
+                    writer.writerow(self.data[i][1])
+
+            self.show_alert(f"Data saved to {npath(file_name)}")
 
     def exit_application(self):
-        sys.exit()
+        self.stop_continuous_reading()
+        QApplication.quit()
 
     def show_alert(self, message):
         alert = QMessageBox()
@@ -274,6 +256,8 @@ class SpectrometerApp(QMainWindow):
         alert.setWindowTitle("Alert")
         alert.exec_()
 
-app = QApplication(sys.argv)
-spectrometer_app = SpectrometerApp()
-sys.exit(app.exec_())
+
+if __name__ == "__main__":
+    app = QApplication([])
+    window = SpectrometerApp()
+    app.exec_()
