@@ -132,7 +132,6 @@ dependencies:
       - pandocfilters==1.5.0
       - pip-autoremove==0.10.0
       - pkgutil-resolve-name==1.3.10
-      - pycairo==1.24.0
       - pyinstaller==5.13.0
       - pyinstaller-hooks-contrib==2023.4
       - pyqt5==5.15.9
@@ -152,4 +151,4 @@ dependencies:
       - tzdata==2023.3
       - webencodings==0.5.1
       - wsproto==1.2.0
-prefix: <<PREFIX>>/ispectra
+prefix: /home/ruco/anaconda3/envs/ispectra
