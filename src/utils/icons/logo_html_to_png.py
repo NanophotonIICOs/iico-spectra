@@ -1,7 +1,7 @@
 import imgkit
 from PIL import Image
 
-def convertir_html_a_png(html_file,type='png',width=350,height=100):
+def convertir_html_a_png(html_file,type='png',width=300,height=70):
     if type=='png':
         image_export = 'logo.png'
     elif type=='ico':
