@@ -17,14 +17,16 @@ from datetime import date
 import csv
 
 # matplotlib params:
-# import matplotlib.pyplot as plt
-# plt.rcParams["font.family"] = "sans-serif"
-# plot propeties
-# import matplotlib as mpl
-# mpl.rcParams["font.serif"] = 'Times New Roman'
-# mpl.rcParams['lines.linewidth']   = 2
-# mpl.rcParams['axes.linewidth']    = 1.5
-# mpl.rcParams['axes.grid.which']   = 'both'
+import matplotlib.pyplot as plt
+plt.rcParams['lines.linewidth']   = 2
+plt.rcParams['axes.linewidth']    = 1.5
+plt.rcParams['axes.grid.which']   = 'both'
+plt.rcParams['axes.labelsize']    = 15
+plt.rcParams['xtick.direction']   = 'in'
+plt.rcParams['xtick.labelsize']   = 13
+plt.rcParams['ytick.labelsize']   = 13
+plt.rcParams['ytick.direction']   = 'in'
+
 # mpl.rcParams['xtick.major.size']  = 5
 # mpl.rcParams['xtick.minor.size']  = 2.5
 # mpl.rcParams['xtick.major.width'] = 1.5
@@ -325,29 +327,16 @@ class SpectrometerApp(QMainWindow):
 
         # Plot area
         self.plot_layout = QVBoxLayout()  # Cambio a QVBoxLayout
-        self.fig = Figure(figsize=(10, 6), dpi=100)
+        self.fig = Figure(figsize=(10, 6))
         self.ax = self.fig.add_subplot(111)
-        # Set the linewidth of the axis lines
-        # self.ax.minorticks_on()
-        # self.ax.tick_params(axis='both', which='both', direction='in', top=True, right=True)
-        # self.ax.spines['left'].set_linewidth(1.5)
-        # self.ax.spines['bottom'].set_linewidth(1.5)
-        # self.ax.spines['right'].set_linewidth(1.5)
-        # self.ax.spines['top'].set_linewidth(1.5)
-        # Set the linewidth of the tick lines
-        self.ax.tick_params(axis='both', width=1.5)
         self.canvas = FigureCanvas(self.fig)
         self.toolbar = NavigationToolbar(self.canvas, self)
-
         self.plot_layout.addWidget(self.canvas)
         self.plot_layout.addWidget(self.toolbar)  # Agregar el toolbar al layout
-
         layout.addLayout(self.plot_layout)
+        self.show()
         
         self.mutex = QMutex()  # Crear una instancia de QMutex
-
-
-        self.show()
         self.check_spectrometers()
 
     def check_spectrometers(self):
@@ -455,16 +444,6 @@ class SpectrometerApp(QMainWindow):
         self.ax.set_ylabel('Intensity')
         self.ax.set_xlim([self.xlim_min_slider.value(), self.xlim_max_slider.value()])
         self.ax.set_ylim([self.ylim_min_slider.value(), self.ylim_max_slider.value()])
-        # Set the linewidth of the axis lines
-        # self.ax.minorticks_on()
-        # self.ax.tick_params(axis='both', which='both', direction='in', top=True, right=True)
-        # self.ax.spines['left'].set_linewidth(1.5)
-        # self.ax.spines['bottom'].set_linewidth(1.5)
-        # self.ax.spines['right'].set_linewidth(1.5)
-        # self.ax.spines['top'].set_linewidth(1.5)
-        # Set the linewidth of the tick lines
-        # self.ax.tick_params(axis='both', width=1.5)
-
         self.canvas.draw()
         self.measurement_counter += 1
         self.measurement_counter_label.setText(f"Measurements: {self.measurement_counter}")
