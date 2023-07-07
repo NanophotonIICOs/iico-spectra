@@ -151,4 +151,4 @@ dependencies:
       - tzdata==2023.3
       - webencodings==0.5.1
       - wsproto==1.2.0
-prefix: prefix: <<PREFIX>>/ispectra
+prefix: <<PREFIX>>/ispectra
