@@ -1,21 +1,19 @@
 import sys
 import os
-import datetime
-import numpy as np
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QHBoxLayout, QFrame, QFileDialog, QMessageBox, QRadioButton, QSlider,QStyleFactory)
-from PyQt5.QtCore import Qt,QThread, QTimer
-from PyQt5.QtGui import QPixmap, QIcon
+from PyQt5.QtWidgets import *
+from PyQt5.QtCore import Qt,QThread
+from PyQt5.QtGui import *
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from threading import Thread
 import seabreeze.spectrometers as sb
-import csv
-from datetime import date
 
 # matplotlib params:
-import matplotlib as plt
-plt.rcParams["font.family"] = "sans-serif"
-import matplotlib.colors as mcolors
+# import matplotlib.pyplot as plt
+# plt.rcParams["font.family"] = "sans-serif"
+
+
+
 
 
 def npath(p):
@@ -26,6 +24,22 @@ def npath(p):
     new_path = part1 + f"{s}...{s}" + part2
     return new_path
 
+
+def save_file_with_number(file_name, routh):
+    cont = 0
+    base_name, ext = os.path.splitext(file_name)
+    new_name = file_name
+
+    while os.path.exists(os.path.join(routh, new_name)):
+        if cont < 10:
+            cont_str = str(cont).zfill(2)
+        else:
+            cont_str = str(cont)
+        new_name = f"{base_name}-{cont_str}{ext}"
+        cont += 1
+
+    complet_r = os.path.join(routh, new_name)
+    return complet_r
 
 class SpectrometerApp(QMainWindow):
     def __init__(self):
@@ -40,25 +54,52 @@ class SpectrometerApp(QMainWindow):
         self.file_path = ""
         self.wavelengths = []
         self.integration_time = 3.8
-        self.save_file = True
-        self.setWindowTitle("ISpectra")
+        self.save_file = False
+        self.setWindowTitle("IICO-Spectra")
         icon = QIcon("utils/icons/logo.ico")
-        self.setWindowIcon(icon)
-        self.resize(900, 600)
+        self.setWindowIcon(icon)        
+        
+        # Obtener el tamaño del monitor
+        desktop = QApplication.desktop()
+        screen_rect = desktop.screenGeometry()
+        screen_width = screen_rect.width()
+        screen_height = screen_rect.height()
+
+        # Calcular el tamaño de la ventana y el sidebar proporcionalmente
+        self.window_width = int(screen_width * 0.5)
+        self.window_height = int(screen_height * 0.5)
+        self.sidebar_width = int(self.window_width * 0.37)
+        self.plot_width = self.window_width - self.sidebar_width
+        self.plot_height = self.window_height 
+        self.resize(self.window_width, self.window_height)
 
         central_widget = QWidget(self)
         self.setCentralWidget(central_widget)
         layout = QHBoxLayout(central_widget)
 
         styles = QStyleFactory.keys()
-        style = "Fusion"  
+        style = "Fusion"
         if style in styles:
             QApplication.setStyle(QStyleFactory.create(style))
+
         # Sidebar
         sidebar = QFrame(self)
         sidebar.setFrameShape(QFrame.Panel)
-        sidebar.setMinimumWidth(323)
+        sidebar.setMinimumWidth(self.sidebar_width)  
+        sidebar.setMaximumWidth(self.sidebar_width)  
+        
+        font_id = QFontDatabase.addApplicationFont("utils/icons/fonts/Ubuntu-Bold.ttf")  
+        if font_id != -1:
+            font_name = QFontDatabase.applicationFontFamilies(font_id)[0]
+            labels_font = QFont(font_name) 
+        else:
+            font_name = "Serif"
+            labels_font = QFont(font_name, 10) 
+            
+        sidebar.setFont(labels_font)
         sidebar_layout = QVBoxLayout(sidebar)
+
+        
         # logo image
         logo_label = QLabel()
         logo_image = QPixmap("utils/icons/logo.png")
@@ -66,110 +107,177 @@ class SpectrometerApp(QMainWindow):
         logo_label.setAlignment(Qt.AlignCenter)
         sidebar_layout.addWidget(logo_label)
 
+        block_font = QFont("Times", 15)  
         label0 = QLabel("Experiment parameters")
-        label0.setAlignment(Qt.AlignCenter)
+        #label0.setAlignment(Qt.AlignCenter)
+        label0.setStyleSheet("background-color:none; color: blue;")
+        label0.setFont(block_font)
+
         sidebar_layout.addWidget(label0)
+        
+        #------------------------------------- box 0-------------------------------------------------------------       
+        box0_layout = QHBoxLayout()
+        sidebar_layout.addLayout(box0_layout)
         # Device name label
         self.device_name_label = QLabel("Device: N/A")
-        sidebar_layout.addWidget(self.device_name_label)
-
+        box0_layout.addWidget(self.device_name_label)
+        
+        # Save file radiobox
+        self.save_file_radio = QRadioButton("Save File")
+        self.save_file_radio.setChecked(False)
+        box0_layout.addWidget(self.save_file_radio)
+       
+       
+        #------------------------------------- box 1-------------------------------------------------------------       
+        name_and_dir_layout = QHBoxLayout()
+        sidebar_layout.addLayout(name_and_dir_layout)
         # File name input
         file_name_label = QLabel("File Name:")
-        sidebar_layout.addWidget(file_name_label)
+        name_and_dir_layout.addWidget(file_name_label)
 
         self.file_name_input = QLineEdit()
-        self.file_name_input.setText("data")
-        sidebar_layout.addWidget(self.file_name_input)
+        self.file_name_input.setText("exp00")
+        name_and_dir_layout.addWidget(self.file_name_input)
 
         # Select destination folder button
         select_folder_button = QPushButton("Select Destination Folder")
         select_folder_button.clicked.connect(self.select_folder)
-        sidebar_layout.addWidget(select_folder_button)
-
+        name_and_dir_layout.addWidget(select_folder_button)
         self.file_path_label = QLabel("")
         sidebar_layout.addWidget(self.file_path_label)
-
-        # Save file radiobox
-        self.save_file_radio = QRadioButton("Save File")
-        self.save_file_radio.setChecked(True)
-        sidebar_layout.addWidget(self.save_file_radio)
-
+        
+        #-----------------------------------------------------------------------------------------------------  
+        
+        #------------------------------------- box 2-------------------------------------------------------------  
+        int_time_layout = QHBoxLayout()
+        sidebar_layout.addLayout(int_time_layout)
         # Integration time input
-        integration_label = QLabel("Integration time:\n [3.8 <= i-time <= 10000]")
-        sidebar_layout.addWidget(integration_label)
+        integration_label = QLabel("Integration time (ms):\n[3.8 <= t <= 10000]")
+        int_time_layout.addWidget(integration_label)
 
         self.integration_time_input = QLineEdit()
         self.integration_time_input.setText("3.8")
-        sidebar_layout.addWidget(self.integration_time_input)
+        int_time_layout.addWidget(self.integration_time_input)
+        
+        separator1 = QFrame()
+        separator1.setFrameShape(QFrame.HLine)
+        separator1.setFrameShadow(QFrame.Sunken)
+        sidebar_layout.addWidget(separator1)
+        #-----------------------------------------------------------------------------------------------------  
+
 
         label1 = QLabel("Run Experiments")
-        label1.setAlignment(Qt.AlignCenter)
+        #label1.setAlignment(Qt.AlignCenter)
         sidebar_layout.addWidget(label1)
+        label1.setStyleSheet("background-color:none; color: blue;")
+        label1.setFont(block_font)
+        
+        #------------------------------------- box 3------------------------------------------------------------- 
+        run_layout = QHBoxLayout()
+        sidebar_layout.addLayout(run_layout)
         start_button = QPushButton("Start")
         start_button.clicked.connect(self.start_continuous_reading)
-        sidebar_layout.addWidget(start_button)
-
+        run_layout.addWidget(start_button)
+        
+        # stop button
         stop_button = QPushButton("Stop")
         stop_button.clicked.connect(self.stop_continuous_reading)
-        sidebar_layout.addWidget(stop_button)
-
-        sidebar_layout.addStretch()
-
-        exit_button = QPushButton("Exit")
-        exit_button.clicked.connect(self.exit_application)
-        sidebar_layout.addWidget(exit_button)
-
+        run_layout.addWidget(stop_button)
         self.measurement_counter_label = QLabel("Measurements: 0")
+        #self.measurement_counter_label.setAlignment(Qt.AlignCenter)
         sidebar_layout.addWidget(self.measurement_counter_label)
+        
+        
+        
+        # expander_sidebars0= QSpacerItem(self.sidebar_width, 10, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        # sidebar_layout.addItem(expander_sidebars0)
 
+        separator2 = QFrame()
+        separator2.setFrameShape(QFrame.HLine)
+        separator2.setFrameShadow(QFrame.Sunken)
+        sidebar_layout.addWidget(separator2)
+        #------------------------------------------------------------------------------------------------------ 
+        
+        
+        #------------------------------------- box 4------------------------------------------------------------- 
+        
+       
+        label2 = QLabel("Plot Parameters")
+        #label1.setAlignment(Qt.AlignCenter)
+        sidebar_layout.addWidget(label2)
+        label2.setStyleSheet("background-color:none; color: blue;")
+        label2.setFont(block_font)
+        
+        
+        xslider_layout = QHBoxLayout()
+        sidebar_layout.addLayout(xslider_layout)
         # Sliders
-        xlim_slider_label = QLabel("X-axis limits:")
-        sidebar_layout.addWidget(xlim_slider_label)
+        xlim_min_slider_label = QLabel("xmin:")
+        xslider_layout.addWidget(xlim_min_slider_label)
         self.xlim_min_slider = QSlider(Qt.Horizontal)
         self.xlim_min_slider.setMinimum(200)
         self.xlim_min_slider.setMaximum(600)
-        self.xlim_min_slider.setTickPosition(QSlider.TicksBelow)
-        self.xlim_min_slider.setTickInterval(0)
         self.xlim_min_slider.setValue(200)
         self.xlim_min_slider.valueChanged.connect(self.update_xlim)
-        sidebar_layout.addWidget(self.xlim_min_slider)
+        xslider_layout.addWidget(self.xlim_min_slider)
         
+        xlim_max_slider_label = QLabel("xmax:")
+        xslider_layout.addWidget(xlim_max_slider_label)
         self.xlim_max_slider = QSlider(Qt.Horizontal)
-        self.xlim_max_slider.setMinimum(600)
-        self.xlim_max_slider.setMaximum(1200)
-        self.xlim_max_slider.setTickPosition(QSlider.TicksBelow)
-        self.xlim_max_slider.setTickInterval(0)
+        self.xlim_max_slider.setMinimum(601)
+        self.xlim_max_slider.setMaximum(1120)
         self.xlim_max_slider.setValue(1200)
         self.xlim_max_slider.valueChanged.connect(self.update_xlim)
-        sidebar_layout.addWidget(self.xlim_max_slider)
+        xslider_layout.addWidget(self.xlim_max_slider)
 
-        ylim_slider_label = QLabel("Y-axis limits:")
-        sidebar_layout.addWidget(ylim_slider_label)
+        yslider_layout = QHBoxLayout()
+        sidebar_layout.addLayout(yslider_layout)
+        ylim_min_slider_label = QLabel("ymin:")
+        yslider_layout.addWidget(ylim_min_slider_label)
         self.ylim_min_slider = QSlider(Qt.Horizontal)
         self.ylim_min_slider.setMinimum(0)
-        self.ylim_min_slider.setMaximum(8000)
-        self.ylim_min_slider.setTickPosition(QSlider.TicksBelow)
-        self.ylim_min_slider.setTickInterval(0)
-        self.ylim_min_slider.setValue(0)
+        self.ylim_min_slider.setMaximum(1000)
         self.ylim_min_slider.valueChanged.connect(self.update_ylim)
-        sidebar_layout.addWidget(self.ylim_min_slider)
+        yslider_layout.addWidget(self.ylim_min_slider)
         
+        ylim_max_slider_label = QLabel("ymax")
+        yslider_layout.addWidget(ylim_max_slider_label)
         self.ylim_max_slider = QSlider(Qt.Horizontal)
-        self.ylim_max_slider.setMinimum(8000)
+        self.ylim_max_slider.setMinimum(1001)
         self.ylim_max_slider.setMaximum(16383)
-        self.ylim_max_slider.setTickPosition(QSlider.TicksBelow)
-        self.ylim_max_slider.setTickInterval(0)
         self.ylim_max_slider.setValue(16383)
         self.ylim_max_slider.valueChanged.connect(self.update_ylim)
-        sidebar_layout.addWidget(self.ylim_max_slider)
+        yslider_layout.addWidget(self.ylim_max_slider)
+        
+        
+        # expander_sidebars1= QSpacerItem(self.sidebar_width, 20, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        # sidebar_layout.addItem(expander_sidebars1)
+        separator3 = QFrame()
+        separator3.setFrameShape(QFrame.HLine)
+        separator3.setFrameShadow(QFrame.Sunken)
+        sidebar_layout.addWidget(separator3)
+        
 
+        #------------------------------------------------------------------------------------------------------ 
+
+        expander_exit = QSpacerItem(self.sidebar_width, 150, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        sidebar_layout.addItem(expander_exit)
+        # exit button
+        exit_button = QPushButton("Exit")
+        exit_button.clicked.connect(self.exit_application)
+        sidebar_layout.addWidget(exit_button)
+        
+        #sidebar_layout.addStretch()
         layout.addWidget(sidebar)
 
         # Main plot area
-        self.fig = Figure(figsize=(8, 6), dpi=100)
+        self.fig = Figure(figsize=(10, 6), dpi=100)
         self.ax = self.fig.add_subplot(111)
         self.canvas = FigureCanvas(self.fig)
         layout.addWidget(self.canvas)
+
+        # Asegurarse de que la gráfica se expanda para llenar el espacio disponible
+
 
         self.show()
 
@@ -177,7 +285,7 @@ class SpectrometerApp(QMainWindow):
         folder = QFileDialog.getExistingDirectory(self, "Select Destination Folder")
         if folder:
             self.file_path = folder
-            fpath = f"{self.file_path}/{self.file_name_input.text()}.csv"
+            fpath = f"{self.file_path}"
             self.file_path_label.setText(f"File Path: {npath(fpath)}")
 
     def start_continuous_reading(self):
@@ -186,8 +294,15 @@ class SpectrometerApp(QMainWindow):
             return
 
         self.file_name = self.file_name_input.text()
-
-        integration_time = float(self.integration_time_input.text())
+        try: 
+            integration_time = float(self.integration_time_input.text())
+        except ValueError:
+            self.show_alert("Integration time value is wrong!. Check Please!")
+            return
+            
+            
+            
+            
         if 3.8 <= integration_time <= 10000:
             self.integration_time = integration_time
         else:
@@ -208,17 +323,18 @@ class SpectrometerApp(QMainWindow):
         self.thread = Thread(target=self.continuous_reading)
         self.thread.start()
 
+        
     def continuous_reading(self):
         intensities = []
         while self.is_measuring:
             try:
                 wavelengths = self.spectrometer.wavelengths()
                 intensities = self.spectrometer.intensities()
-                self.data.append(intensities.copy())  # Agregar una copia de las intensidades a la lista de datos
+                self.data.append(intensities.copy())  # add a copy of intensity list
                 self.wavelengths = wavelengths
 
                 self.ax.cla()
-                self.ax.plot(wavelengths, intensities, color='tab:blue', label=self.measurement_counter)
+                self.ax.plot(wavelengths, intensities, color='tab:blue', label=f"Measure:{self.measurement_counter}")
                 self.ax.set_xlabel('Wavelength (nm)')
                 self.ax.set_ylabel('Intensity')
                 self.ax.set_title('Spectrum')
@@ -248,38 +364,46 @@ class SpectrometerApp(QMainWindow):
         self.measurement_counter_label.setText(f"Measurements: {self.measurement_counter}")
 
     def update_xlim(self, value):
-        self.ax.set_xlim([self.xlim_min_slider.value(), self.xlim_max_slider.value()])
-        self.canvas.draw()
-        
-    # def update_xlim(self, value):
-    # if self.ax.lines: 
-    #     self.ax.set_xlim([self.xlim_min_slider.value(), self.xlim_max_slider.value()])
-    #     self.canvas.draw()
+        try:
+            if self.ax.lines:
+                self.ax.set_xlim([self.xlim_min_slider.value(), self.xlim_max_slider.value()])
+                self.canvas.draw()
+        except IndexError:
+            pass
 
 
     def update_ylim(self, value):
-        self.ax.set_ylim([self.ylim_min_slider.value(), self.ylim_max_slider.value()])
-        self.canvas.draw()
+        try:
+            if self.ax.lines:
+                self.ax.set_ylim([self.ylim_min_slider.value(), self.ylim_max_slider.value()])
+                self.canvas.draw()
+        except IndexError:
+            pass
+
 
     def save_data(self):
         if self.data and self.save_file_radio.isChecked():
             today = date.today()
             datet = today.strftime("%Y-%m-%d")
-            current_time = datetime.datetime.now()
-            file_path = f"{self.file_path}/{self.file_name}-{datet}-{current_time.hour}:{current_time.minute}:{current_time.second}.csv"
+            file_path = f"{self.file_name}-{self.integration_time}ms-{datet}.csv"
+            file_path = save_file_with_number(file_path,self.file_path)
             try:
                 with open(file_path, "w", newline="") as csvfile:
                     writer = csv.writer(csvfile)
                     writer.writerow(["Wavelength (nm)"] + list(range(len(self.data))))
                     writer.writerows(zip(self.wavelengths, *self.data))
-                self.show_alert("Data saved successfully.")
+                self.show_alert(f"{file_path} data saved successfully.")
             except IOError:
                 self.show_alert("Error occurred while saving the data.")
         else:
             self.show_alert("No data to save.")
 
     def exit_application(self):
-        sys.exit()
+        confirm_exit = QMessageBox.question(self, "Confirm Exit", "Are you sure you want to exit?",
+                                        QMessageBox.Yes | QMessageBox.No)
+        if confirm_exit == QMessageBox.Yes:
+            self.stop_continuous_reading()  # Detener el hilo antes de salir
+            sys.exit()
 
     def show_alert(self, message):
         alert = QMessageBox()
