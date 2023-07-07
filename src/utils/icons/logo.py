@@ -1,11 +1,11 @@
 import io
 import IPython.display
-import cairo
+import cairocffi as cairo
 import svgwrite
 from PIL import Image
 
 # Crear el archivo de imagen en memoria
-w = 313
+w = 330
 h = 100
 surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, w, h)
 
@@ -13,8 +13,10 @@ surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, w, h)
 context = cairo.Context(surface)
 
 # Establecer el tamaño y tipo de fuente
-context.set_font_size(50)
-context.select_font_face("Arial", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
+font_path = "caprasimo.ttf"  # Replace with the path to your font file
+context.set_font_size(55)
+context.select_font_face("Times", cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL)
+context.set_font_options(cairo.FontOptions())
 
 # Establecer el color del rectángulo
 context.set_source_rgb(0.2, 0.4, 0.6)
