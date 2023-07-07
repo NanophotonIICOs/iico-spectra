@@ -21,4 +21,4 @@ def convertir_html_a_png(html_file,type='png',width=300,height=70):
 
 convertir_html_a_png('logo.html')
 
-convertir_html_a_png('icon.html',type='ico',width=24,height=24)
+convertir_html_a_png('icon.html',type='ico',width=32,height=32)
