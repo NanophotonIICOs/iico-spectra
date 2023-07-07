@@ -26,14 +26,13 @@ plt.rcParams['xtick.direction']   = 'in'
 plt.rcParams['xtick.labelsize']   = 13
 plt.rcParams['ytick.labelsize']   = 13
 plt.rcParams['ytick.direction']   = 'in'
-
-# mpl.rcParams['xtick.major.size']  = 5
+plt.rcParams['xtick.major.size']  = 5
 # mpl.rcParams['xtick.minor.size']  = 2.5
-# mpl.rcParams['xtick.major.width'] = 1.5
+plt.rcParams['xtick.major.width'] = 1.5
 # mpl.rcParams['xtick.minor.width'] = 1.5
-# mpl.rcParams['ytick.major.size']  = 5
+plt.rcParams['ytick.major.size']  = 5
 # mpl.rcParams['ytick.minor.size']  = 2.5
-# mpl.rcParams['ytick.major.width'] = 1.5
+plt.rcParams['ytick.major.width'] = 1.5
 # mpl.rcParams['ytick.minor.width'] = 1.5
 
 
@@ -120,9 +119,9 @@ class SpectrometerApp(QMainWindow):
         screen_height = screen_rect.height()
 
         # Calcular el tamaño de la ventana y el sidebar proporcionalmente
-        self.window_width = int(screen_width * 0.5)
+        self.window_width = int(screen_width * 0.55)
         self.window_height = int(screen_height * 0.5)
-        self.sidebar_width = int(self.window_width * 0.37)
+        self.sidebar_width = int(self.window_width * 0.3)
         self.plot_width = self.window_width - self.sidebar_width
         self.plot_height = self.window_height 
         self.resize(self.window_width, self.window_height)
