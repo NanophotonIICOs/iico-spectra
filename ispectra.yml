@@ -5,8 +5,6 @@ dependencies:
   - _libgcc_mutex=0.1=main
   - _openmp_mutex=5.1=1_gnu
   - appdirs=1.4.4=pyhd3eb1b0_0
-  - asttokens=2.0.5=pyhd3eb1b0_0
-  - backcall=0.2.0=pyhd3eb1b0_0
   - blas=1.0=mkl
   - brotli=1.0.9=h5eee18b_7
   - brotli-bin=1.0.9=h5eee18b_7
@@ -15,14 +13,10 @@ dependencies:
   - certifi=2023.5.7=py38h06a4308_0
   - cffi=1.15.1=py38h5eee18b_3
   - charset-normalizer=2.0.4=pyhd3eb1b0_0
-  - comm=0.1.2=py38h06a4308_0
   - contourpy=1.0.5=py38hdb19cb5_0
   - cryptography=39.0.1=py38h9ce1e76_2
   - cycler=0.11.0=pyhd3eb1b0_0
   - dbus=1.13.18=hb2f20db_0
-  - debugpy=1.5.1=py38h295c915_0
-  - decorator=5.1.1=pyhd3eb1b0_0
-  - executing=0.8.3=pyhd3eb1b0_0
   - expat=2.4.9=h6a678d5_0
   - fontconfig=2.14.1=h52c9d5c_1
   - fonttools=4.25.0=pyhd3eb1b0_0
@@ -33,16 +27,9 @@ dependencies:
   - gstreamer=1.14.1=h5eee18b_1
   - icu=58.2=he6710b0_3
   - idna=3.4=py38h06a4308_0
-  - importlib-metadata=6.0.0=py38h06a4308_0
-  - importlib_metadata=6.0.0=hd3eb1b0_0
   - importlib_resources=5.2.0=pyhd3eb1b0_1
   - intel-openmp=2023.1.0=hdb19cb5_46305
-  - ipykernel=6.19.2=py38hb070fc8_0
-  - ipython=8.12.0=py38h06a4308_0
-  - jedi=0.18.1=py38h06a4308_1
   - jpeg=9e=h5eee18b_1
-  - jupyter_client=8.1.0=py38h06a4308_0
-  - jupyter_core=5.3.0=py38h06a4308_0
   - kiwisolver=1.4.4=py38h6a678d5_0
   - krb5=1.20.1=h143b758_1
   - lcms2=2.12=h3be6417_0
@@ -63,7 +50,6 @@ dependencies:
   - libllvm10=10.0.1=hbcb73fb_5
   - libpng=1.6.39=h5eee18b_0
   - libpq=12.15=hdbd6064_1
-  - libsodium=1.0.18=h7b6447c_0
   - libstdcxx-ng=11.2.0=h1234567_1
   - libtiff=4.5.0=h6a678d5_2
   - libuuid=1.41.5=h5eee18b_0
@@ -76,35 +62,24 @@ dependencies:
   - lz4-c=1.9.4=h6a678d5_0
   - matplotlib=3.7.1=py38h06a4308_1
   - matplotlib-base=3.7.1=py38h417a72b_1
-  - matplotlib-inline=0.1.6=py38h06a4308_0
   - mkl=2023.1.0=h6d00ec8_46342
   - mkl-service=2.4.0=py38h5eee18b_1
   - mkl_fft=1.3.6=py38h417a72b_1
   - mkl_random=1.2.2=py38h417a72b_1
   - munkres=1.1.4=py_0
   - ncurses=6.4=h6a678d5_0
-  - nest-asyncio=1.5.6=py38h06a4308_0
   - nspr=4.35=h6a678d5_0
   - nss=3.89.1=h6a678d5_0
   - numpy=1.24.3=py38hf6e8229_1
   - numpy-base=1.24.3=py38h060ed82_1
   - openssl=3.0.9=h7f8727e_0
   - packaging=23.0=py38h06a4308_0
-  - parso=0.8.3=pyhd3eb1b0_0
   - pcre=8.45=h295c915_0
-  - pexpect=4.8.0=pyhd3eb1b0_3
-  - pickleshare=0.7.5=pyhd3eb1b0_1003
   - pillow=9.4.0=py38h6a678d5_0
   - pip=23.1.2=py38h06a4308_0
-  - platformdirs=2.5.2=py38h06a4308_0
   - ply=3.11=py38_0
   - pooch=1.4.0=pyhd3eb1b0_0
-  - prompt-toolkit=3.0.36=py38h06a4308_0
-  - psutil=5.9.0=py38h5eee18b_0
-  - ptyprocess=0.7.0=pyhd3eb1b0_2
-  - pure_eval=0.2.2=pyhd3eb1b0_0
   - pycparser=2.21=pyhd3eb1b0_0
-  - pygments=2.15.1=py38h06a4308_1
   - pyopenssl=23.0.0=py38h06a4308_0
   - pyparsing=3.0.9=py38h06a4308_0
   - pyqt=5.15.7=py38h6a678d5_1
@@ -112,7 +87,6 @@ dependencies:
   - pysocks=1.7.1=py38h06a4308_0
   - python=3.8.16=h955ad1f_4
   - python-dateutil=2.8.2=pyhd3eb1b0_0
-  - pyzmq=25.1.0=py38h6a678d5_0
   - qt-main=5.15.2=h327a75a_7
   - qt-webengine=5.15.9=hd2b0992_4
   - qtwebkit=5.212=h4eab89a_4
@@ -123,36 +97,59 @@ dependencies:
   - sip=6.6.2=py38h6a678d5_0
   - six=1.16.0=pyhd3eb1b0_1
   - sqlite=3.41.2=h5eee18b_0
-  - stack_data=0.2.0=pyhd3eb1b0_0
   - tbb=2021.8.0=hdb19cb5_0
   - tk=8.6.12=h1ccaba5_0
   - toml=0.10.2=pyhd3eb1b0_0
   - tornado=6.2=py38h5eee18b_0
-  - traitlets=5.7.1=py38h06a4308_0
-  - typing_extensions=4.6.3=py38h06a4308_0
   - urllib3=1.26.16=py38h06a4308_0
-  - wcwidth=0.2.5=pyhd3eb1b0_0
   - wheel=0.38.4=py38h06a4308_0
   - xz=5.4.2=h5eee18b_0
-  - zeromq=4.3.4=h2531618_0
   - zipp=3.11.0=py38h06a4308_0
   - zlib=1.2.13=h5eee18b_0
   - zstd=1.5.5=hc292b87_0
   - pip:
       - altgraph==0.17.3
+      - attrs==23.1.0
+      - beautifulsoup4==4.12.2
+      - bleach==6.0.0
       - cairocffi==1.6.0
       - cairosvg==2.7.0
       - cssselect2==0.7.0
       - defusedxml==0.7.1
+      - exceptiongroup==1.1.2
+      - fastjsonschema==2.17.1
+      - h11==0.14.0
+      - imgkit==1.2.3
+      - jinja2==3.1.2
+      - jsonschema==4.17.3
+      - markdown==3.4.3
+      - markupsafe==2.1.3
+      - mistune==3.0.1
+      - nbclient==0.8.0
+      - nbformat==5.9.0
+      - outcome==1.2.0
       - pandas==2.0.3
+      - pandocfilters==1.5.0
+      - pip-autoremove==0.10.0
+      - pkgutil-resolve-name==1.3.10
       - pycairo==1.24.0
       - pyinstaller==5.13.0
       - pyinstaller-hooks-contrib==2023.4
       - pyqt5==5.15.9
       - pyqt5-qt5==5.15.2
+      - pyrsistent==0.19.3
       - pytz==2023.3
+      - qtpy==2.3.1
       - seabreeze==2.4.0
+      - shiboken6==6.5.1.1
+      - sniffio==1.3.0
+      - sortedcontainers==2.4.0
+      - soupsieve==2.4.1
       - svgwrite==1.4.3
       - tinycss2==1.2.1
+      - trio==0.22.1
+      - trio-websocket==0.10.3
       - tzdata==2023.3
       - webencodings==0.5.1
+      - wsproto==1.2.0
+prefix: <<PREFIX>>/ispectra
