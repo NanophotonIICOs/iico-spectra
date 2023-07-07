@@ -20,19 +20,19 @@ import csv
 # import matplotlib.pyplot as plt
 # plt.rcParams["font.family"] = "sans-serif"
 # plot propeties
-import matplotlib as mpl
-mpl.rcParams["font.serif"] = 'Times New Roman'
-mpl.rcParams['lines.linewidth']   = 2
-mpl.rcParams['axes.linewidth']    = 1.5
-mpl.rcParams['axes.grid.which']   = 'both'
-mpl.rcParams['xtick.major.size']  = 5
-mpl.rcParams['xtick.minor.size']  = 2.5
-mpl.rcParams['xtick.major.width'] = 1.5
-mpl.rcParams['xtick.minor.width'] = 1.5
-mpl.rcParams['ytick.major.size']  = 5
-mpl.rcParams['ytick.minor.size']  = 2.5
-mpl.rcParams['ytick.major.width'] = 1.5
-mpl.rcParams['ytick.minor.width'] = 1.5
+# import matplotlib as mpl
+# mpl.rcParams["font.serif"] = 'Times New Roman'
+# mpl.rcParams['lines.linewidth']   = 2
+# mpl.rcParams['axes.linewidth']    = 1.5
+# mpl.rcParams['axes.grid.which']   = 'both'
+# mpl.rcParams['xtick.major.size']  = 5
+# mpl.rcParams['xtick.minor.size']  = 2.5
+# mpl.rcParams['xtick.major.width'] = 1.5
+# mpl.rcParams['xtick.minor.width'] = 1.5
+# mpl.rcParams['ytick.major.size']  = 5
+# mpl.rcParams['ytick.minor.size']  = 2.5
+# mpl.rcParams['ytick.major.width'] = 1.5
+# mpl.rcParams['ytick.minor.width'] = 1.5
 
 
 
@@ -328,13 +328,12 @@ class SpectrometerApp(QMainWindow):
         self.fig = Figure(figsize=(10, 6), dpi=100)
         self.ax = self.fig.add_subplot(111)
         # Set the linewidth of the axis lines
-        self.ax.minorticks_on()
-        self.ax.tick_params(axis='both', which='both', direction='in', top=True, right=True)
-        self.ax.spines['left'].set_linewidth(1.5)
-        self.ax.spines['bottom'].set_linewidth(1.5)
-        self.ax.spines['right'].set_linewidth(1.5)
-        self.ax.spines['top'].set_linewidth(1.5)
-
+        # self.ax.minorticks_on()
+        # self.ax.tick_params(axis='both', which='both', direction='in', top=True, right=True)
+        # self.ax.spines['left'].set_linewidth(1.5)
+        # self.ax.spines['bottom'].set_linewidth(1.5)
+        # self.ax.spines['right'].set_linewidth(1.5)
+        # self.ax.spines['top'].set_linewidth(1.5)
         # Set the linewidth of the tick lines
         self.ax.tick_params(axis='both', width=1.5)
         self.canvas = FigureCanvas(self.fig)
@@ -457,14 +456,14 @@ class SpectrometerApp(QMainWindow):
         self.ax.set_xlim([self.xlim_min_slider.value(), self.xlim_max_slider.value()])
         self.ax.set_ylim([self.ylim_min_slider.value(), self.ylim_max_slider.value()])
         # Set the linewidth of the axis lines
-        self.ax.minorticks_on()
-        self.ax.tick_params(axis='both', which='both', direction='in', top=True, right=True)
-        self.ax.spines['left'].set_linewidth(1.5)
-        self.ax.spines['bottom'].set_linewidth(1.5)
-        self.ax.spines['right'].set_linewidth(1.5)
-        self.ax.spines['top'].set_linewidth(1.5)
+        # self.ax.minorticks_on()
+        # self.ax.tick_params(axis='both', which='both', direction='in', top=True, right=True)
+        # self.ax.spines['left'].set_linewidth(1.5)
+        # self.ax.spines['bottom'].set_linewidth(1.5)
+        # self.ax.spines['right'].set_linewidth(1.5)
+        # self.ax.spines['top'].set_linewidth(1.5)
         # Set the linewidth of the tick lines
-        self.ax.tick_params(axis='both', width=1.5)
+        # self.ax.tick_params(axis='both', width=1.5)
 
         self.canvas.draw()
         self.measurement_counter += 1
