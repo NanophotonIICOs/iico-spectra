@@ -12,7 +12,7 @@ To install and run the spectrometer GUI, follow these steps:
 
 <ol>
   <li> Clone the repository to your local machine:
-<pre class='prompt'><code>https://github.com/NanophotonIICOs/iico-spectra.git</code></pre>
+<pre class='prompt'><code>git clone https://github.com/NanophotonIICOs/iico-spectra.git</code></pre>
 </li>
 <li> Set up the Anaconda environment to ensure library compatibility:
 <pre><code>conda env create -f ispectra.yml</code></pre>
