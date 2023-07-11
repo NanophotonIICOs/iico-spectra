@@ -2,11 +2,10 @@ import sys
 import os
 from PyQt5.QtWidgets import (
     QMainWindow, QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QRadioButton,
-    QSlider, QStyleFactory, QFrame, QLineEdit, QSpacerItem, QSizePolicy, QMessageBox, QFileDialog
+    QSlider, QStyleFactory, QFrame, QLineEdit, QSpacerItem, QSizePolicy, QMessageBox, QFileDialog,QCheckBox
 )
-from PyQt5.QtCore import QObject, pyqtSignal, Qt, QThreadPool, QThread,QMutex,QMutexLocker,pyqtSlot
+from PyQt5.QtCore import (QObject, pyqtSignal, Qt, QThreadPool, QThread,QMutex,QMutexLocker,pyqtSlot,QTimer)
 from PyQt5.QtGui import QIcon, QPixmap, QFont, QFontDatabase
-
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -17,8 +16,6 @@ from datetime import date
 import csv
 
 # matplotlib params:
-import matplotlib.pyplot as plt
-plt.rcParams['lines.linewidth']   = 2
 plt.rcParams['axes.linewidth']    = 1.5
 plt.rcParams['axes.grid.which']   = 'both'
 plt.rcParams['axes.labelsize']    = 15
@@ -66,31 +63,36 @@ def save_file_with_number(name,it, path):
     return complete_path
 
 
-class WorkerSignals(QObject):
-    measurementFinished = pyqtSignal(list)
-
 class MeasurementThread(QThread):
     measurementFinished = pyqtSignal(list)
 
-    def __init__(self, spectrometer, integration_time):
+    def __init__(self, spectrometer, integration_time, num_measurements=None):
         super().__init__()
         self.spectrometer = spectrometer
         self.integration_time = integration_time
+        self.num_measurements = num_measurements
         self.is_running = True
 
     def run(self):
         self.spectrometer.integration_time_micros(self.integration_time * 1000)
-        while self.is_running:
-            wavelengths = self.spectrometer.wavelengths()
-            intensities = self.spectrometer.intensities()
-            self.measurementFinished.emit([wavelengths, intensities])
-            QThread.msleep(100)  # Pequeña pausa para permitir que el hilo principal responda
+        if self.num_measurements is not None:
+            for _ in range(self.num_measurements):
+                if not self.is_running:
+                    break
+                wavelengths = self.spectrometer.wavelengths()
+                intensities = self.spectrometer.intensities()
+                self.measurementFinished.emit([wavelengths, intensities])
+                QThread.msleep(100)
+        else:
+            while self.is_running:
+                wavelengths = self.spectrometer.wavelengths()
+                intensities = self.spectrometer.intensities()
+                self.measurementFinished.emit([wavelengths, intensities])
+                QThread.msleep(100)
 
     def stop(self):
         self.is_running = False
-        self.wait()  # Esperar a que el hilo finalice completamente
-        
-
+        self.wait()
         
 class SpectrometerApp(QMainWindow):
     def __init__(self):
@@ -100,7 +102,6 @@ class SpectrometerApp(QMainWindow):
         self.thread = None
         self.worker = None
         self.measurement_thread = None
-        self.threadpool = QThreadPool()  # Agregar esta línea
         self.measurement_counter = 0
         self.data = []
         self.file_name = ""
@@ -119,7 +120,7 @@ class SpectrometerApp(QMainWindow):
         screen_height = screen_rect.height()
 
         # Calcular el tamaño de la ventana y el sidebar proporcionalmente
-        self.window_width = int(screen_width * 0.55)
+        self.window_width = int(screen_width * 0.7)
         self.window_height = int(screen_height * 0.5)
         self.sidebar_width = int(self.window_width * 0.3)
         self.plot_width = self.window_width - self.sidebar_width
@@ -199,6 +200,19 @@ class SpectrometerApp(QMainWindow):
         self.file_path_label = QLabel("")
         sidebar_layout.addWidget(self.file_path_label)
         
+        #--------------------------------------- No of Meas. choose-----------------------------------------
+        nomeas_layout = QHBoxLayout()
+        sidebar_layout.addLayout(nomeas_layout)
+        self.num_measurements_checkbox = QCheckBox("Multiple Measurements")
+        self.num_measurements_checkbox.setChecked(False)
+        nomeas_layout.addWidget(self.num_measurements_checkbox)
+        
+        self.num_measurements_input = QLineEdit()
+        self.num_measurements_input.setText("1")
+        nomeas_layout.addWidget(self.num_measurements_input)
+        self.num_measurements_checkbox.stateChanged.connect(self.handle_num_measurements_checkbox)
+
+        
         #-----------------------------------------------------------------------------------------------------  
         
         #------------------------------------- box 2-------------------------------------------------------------  
@@ -272,7 +286,7 @@ class SpectrometerApp(QMainWindow):
         self.xlim_min_slider.setMinimum(195)
         self.xlim_min_slider.setMaximum(800)
         self.xlim_min_slider.setValue(195)
-        self.xlim_min_slider.valueChanged.connect(self.update_xlim)
+        self.xlim_min_slider.valueChanged.connect(self.update_xlim_max_min)
         xslider_layout.addWidget(self.xlim_min_slider)
         
         xlim_max_slider_label = QLabel("xmax:")
@@ -280,6 +294,7 @@ class SpectrometerApp(QMainWindow):
         self.xlim_max_slider = QSlider(Qt.Horizontal)
         self.xlim_max_slider.setMinimum(801)
         self.xlim_max_slider.setMaximum(1119)
+    
         self.xlim_max_slider.setValue(1119)
         self.xlim_max_slider.valueChanged.connect(self.update_xlim)
         xslider_layout.addWidget(self.xlim_max_slider)
@@ -328,6 +343,9 @@ class SpectrometerApp(QMainWindow):
         self.plot_layout = QVBoxLayout()  # Cambio a QVBoxLayout
         self.fig = Figure(figsize=(10, 6))
         self.ax = self.fig.add_subplot(111)
+        self.ax.set_xlabel('Wavelength (nm)')
+        self.ax.set_ylabel('Intensity')
+        self.fig.tight_layout()
         self.canvas = FigureCanvas(self.fig)
         self.toolbar = NavigationToolbar(self.canvas, self)
         self.plot_layout.addWidget(self.canvas)
@@ -355,43 +373,51 @@ class SpectrometerApp(QMainWindow):
             self.file_path_label.setText(f"File Path: {npath(fpath)}")
             self.file_path_label.setStyleSheet("background-color:none; color: blue;")
             
+    def handle_num_measurements_checkbox(self, state):
+        if state == Qt.Checked:
+            self.num_measurements_input.setEnabled(True)
+        else:
+            self.num_measurements_input.setEnabled(False)
+            
             
     def start_measurement(self):
-        with QMutexLocker(self.mutex):  # Bloquear el mutex
-            if self.is_measuring:
-                self.show_alert("Measurement already in progress.")
-                return
+            with QMutexLocker(self.mutex):
+                if self.is_measuring:
+                    self.show_alert("Measurement already in progress.")
+                    return
 
-            if not self.file_path:
-                self.show_alert("Select destination folder first.")
-                return
+                if not self.file_path:
+                    self.show_alert("Select destination folder first.")
+                    return
 
-            self.file_name = self.file_name_input.text()
-            try:
-                self.integration_time = float(self.integration_time_input.text())
-            except ValueError:
-                self.show_alert("Integration time value is wrong!. Check Please!")
-                return
+                self.file_name = self.file_name_input.text()
+                try:
+                    self.integration_time = float(self.integration_time_input.text())
+                except ValueError:
+                    self.show_alert("Integration time value is wrong!. Check Please!")
+                    return
 
-            if not (3.8 <= self.integration_time <= 10000):
-                self.show_alert("Integration time must be between 3.8 and 10000.")
-                return
+                if not (3.8 <= self.integration_time <= 10000):
+                    self.show_alert("Integration time must be between 3.8 and 10000.")
+                    return
 
-            if self.measurement_thread is not None:  # Detener el hilo de medición existente si lo hay
-                self.stop_measurement()
+                if self.num_measurements_checkbox.isChecked():
+                    num_measurements = int(self.num_measurements_input.text())
+                else:
+                    num_measurements = None
 
-            self.is_measuring = True
-            self.measurement_counter = 0
-            self.data = []
-            self.wavelengths = []
-            self.measurement_thread = MeasurementThread(self.spectrometer, self.integration_time)
-            self.measurement_thread.measurementFinished.connect(self.process_measurement)
-            self.measurement_thread.start()
-            self.update_ui_state()
+                if self.measurement_thread is not None:
+                    self.stop_measurement()
 
+                self.is_measuring = True
+                self.measurement_counter = 0
+                self.data = []
+                self.wavelengths = []
+                self.measurement_thread = MeasurementThread(self.spectrometer, self.integration_time, num_measurements)
+                self.measurement_thread.measurementFinished.connect(self.process_measurement)
+                self.measurement_thread.start()
+                self.update_ui_state()
 
-
-            
     def update_ui_state(self):
         if self.is_measuring:
             self.start_button.setEnabled(False)
@@ -400,37 +426,26 @@ class SpectrometerApp(QMainWindow):
             self.start_button.setEnabled(True)
             self.stop_button.setEnabled(False)
 
-            
-    def handle_measurement_finished(self, measurement_data):
-        wavelengths, intensities = measurement_data
-        self.wavelengths = wavelengths
-        self.data.append(intensities)
-        self.measurement_counter += 1
-        self.measurement_counter_label.setText(f"Measurements: {self.measurement_counter}")
-        self.update_plot()
-
     def stop_measurement(self):
-        with QMutexLocker(self.mutex):
-            if self.is_measuring:
-                self.is_measuring = False
-                self.measurement_thread.stop()
-                self.measurement_thread.wait()  # Esperar a que el hilo finalice completamente
-                self.measurement_thread.deleteLater()  # Eliminar el hilo de medición
-                self.measurement_thread = None
-                self.update_ui_state()
-                QMessageBox.information(self, "Measurement Finished", "Measurement finished successfully.")
-                
-                if self.save_file_radio.isChecked():
-                    if self.save_data():
-                        self.show_alert("Measurement finished. Data saved successfully.")
-                        self.data_saved = True
-                    else:
-                        self.show_alert("Measurement finished. Error occurred while saving the data.")
-                        self.data_saved = False
-            else:
-                self.show_alert("No measurement in progress.")
-                self.data_saved = False
+            with QMutexLocker(self.mutex):
+                if self.is_measuring:
+                    self.is_measuring = False
+                    self.measurement_thread.stop()
+                    self.measurement_thread.wait()
+                    self.measurement_thread.deleteLater()
+                    self.measurement_thread = None
+                    self.update_ui_state()
+                    QMessageBox.information(self, "Measurement Finished", "Measurement finished successfully.")
 
+                    if self.save_file_radio.isChecked():
+                        if self.save_data():
+                            self.show_alert("Measurement finished. Data saved successfully.")
+                            self.data_saved = True
+                        else:
+                            self.show_alert("Measurement finished. Error occurred while saving the data.")
+                            self.data_saved = False
+
+    
     @pyqtSlot(list)
     def process_measurement(self, measurement_data):
         wavelengths, intensities = measurement_data
@@ -438,29 +453,50 @@ class SpectrometerApp(QMainWindow):
         self.wavelengths = wavelengths
 
         self.ax.clear()
-        self.ax.plot(wavelengths, intensities, color='tab:blue',label=f"Measure:{self.measurement_counter}")
+        self.ax.plot(wavelengths, intensities, color='tab:blue', label=f"Measure:{self.measurement_counter}")
         self.ax.set_xlabel('Wavelength (nm)')
         self.ax.set_ylabel('Intensity')
         self.ax.set_xlim([self.xlim_min_slider.value(), self.xlim_max_slider.value()])
         self.ax.set_ylim([self.ylim_min_slider.value(), self.ylim_max_slider.value()])
+        self.fig.tight_layout()
         self.canvas.draw()
+
         self.measurement_counter += 1
         self.measurement_counter_label.setText(f"Measurements: {self.measurement_counter}")
         self.update()
 
+        if self.num_measurements_checkbox.isChecked() and self.measurement_counter >= int(self.num_measurements_input.text()):
+            QTimer.singleShot(0, self.stop_measurement)
+            QMessageBox.information(self, "Measurement Finished", "Measurement finished successfully.")
 
+            
+    def stop_button_clicked(self):
+        if self.num_measurements_checkbox.isChecked():
+            self.stop_measurement()
+        else:
+            self.stop_measurement_with_prompt()
 
-    def measurement_finished(self):
-        self.thread.deleteLater()
-        self.thread = None
-        QMessageBox.information(self, "Measurement Finished", "Measurement finished successfully.")
+    def stop_measurement_with_prompt(self):
+        confirm_stop = QMessageBox.question(
+            self, "Confirm Stop", "Are you sure you want to stop the measurement?",
+            QMessageBox.Yes | QMessageBox.No
+        )
+        if confirm_stop == QMessageBox.Yes:
+            self.stop_measurement()
+
         
- 
+    def update_xlim_max_min(self, value):
+        min_value = self.xlim_min_slider.value()
+        self.xlim_max_slider.setMinimum(min_value + 100)  # Establecer el valor mínimo del xlim_max_slider en función de xlim_min_slider
+        self.xlim_max_slider.setValue(max(min_value + 100, self.xlim_max_slider.value()))  # Ajustar el valor actual si es menor que el nuevo mínimo
+
         
     def update_xlim(self, value):
         try:
             if self.ax.lines:
-                self.ax.set_xlim([self.xlim_min_slider.value(), self.xlim_max_slider.value()])
+                xmin = self.xlim_min_slider.value()
+                xmax = self.xlim_max_slider.value()
+                self.ax.set_xlim([xmin, xmax])
                 self.canvas.draw()
         except IndexError:
             pass
@@ -477,7 +513,7 @@ class SpectrometerApp(QMainWindow):
 
     def save_data(self):
         if self.data and self.save_file_radio.isChecked():
-            self.file_name_data = save_file_with_number(self.file_name,self.integration_time,self.file_path)
+            self.file_name_data = save_file_with_number(self.file_name, int(self.integration_time), self.file_path)
             try:
                 with open(self.file_name_data, "w", newline="") as csvfile:
                     writer = csv.writer(csvfile)
